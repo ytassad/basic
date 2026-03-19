@@ -1,112 +1,257 @@
-<!DOCTYPE html><html lang="ar" dir="rtl">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>عباس بن فرناس</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Tahoma', sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-    }header {
-  background: linear-gradient(135deg, #1e293b, #020617);
-  padding: 40px;
-  text-align: center;
+<meta charset="UTF-8">
+<title>MangaKey Pro</title>
+
+<style>
+body {
+  background:black;
+  color:#00ff00;
+  font-family:monospace;
+  font-size:12px;
+  margin:0;
 }
 
-header h1 {
-  margin: 0;
-  font-size: 32px;
+.header {
+  text-align:center;
+  border-bottom:1px solid #00ff00;
+  padding:5px;
 }
 
-header p {
-  color: #94a3b8;
-  margin-top: 10px;
+ul { list-style:none; padding:0; margin:0; }
+li { padding:6px; }
+
+.active {
+  background:#00ff00;
+  color:black;
 }
 
-nav {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  background: #020617;
-  padding: 10px;
+.footer {
+  position:fixed;
+  bottom:0;
+  width:100%;
+  font-size:10px;
+  border-top:1px solid #00ff00;
+  background:black;
 }
 
-nav a {
-  color: #38bdf8;
-  text-decoration: none;
-  font-weight: bold;
+input {
+  width:95%;
+  background:black;
+  color:#00ff00;
+  border:1px solid #00ff00;
 }
-
-section {
-  padding: 30px;
-  max-width: 900px;
-  margin: auto;
-}
-
-.card {
-  background: #1e293b;
-  padding: 20px;
-  border-radius: 15px;
-  margin-bottom: 20px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
-.skills span {
-  display: inline-block;
-  background: #38bdf8;
-  color: #020617;
-  padding: 5px 10px;
-  border-radius: 10px;
-  margin: 5px;
-}
-
-footer {
-  text-align: center;
-  padding: 20px;
-  background: #020617;
-  color: #64748b;
-}
-
-  </style>
+</style>
 </head>
-<body><header>
-  <h1>عباس بن فرناس</h1>
-  <p>عقل تقني | عاشق للتجارب | باحث عن الحرية الرقمية</p>
-</header><nav>
-  <a href="#about">من أنا</a>
-  <a href="#skills">مهاراتي</a>
-  <a href="#goals">توجهاتي</a>
-</nav><section id="about">
-  <div class="card">
-    <h2>من أنا</h2>
-    <p>
-      بدأت رحلتي مع التكنولوجيا من الهاتف، بدون صلاحيات، لكن بعقل يبحث عن كل ثغرة وكل فرصة للتعلم.
-      أعتمد على نفسي، وأتعلم من التجربة، وأؤمن أن المعرفة لا تحتاج إلى أدوات قوية بل إلى عقل فضولي.
-    </p>
-  </div>
-</section><section id="skills">
-  <div class="card">
-    <h2>مهاراتي</h2>
-    <div class="skills">
-      <span>Linux</span>
-      <span>Termux</span>
-      <span>Python</span>
-      <span>اختراق أخلاقي</span>
-      <span>تعديل أنظمة</span>
-      <span>تحليل تقني</span>
-    </div>
-  </div>
-</section><section id="goals">
-  <div class="card">
-    <h2>توجهاتي</h2>
-    <p>
-      هدفي هو بناء أدواتي الخاصة، فهم الأنظمة من الداخل، وإنشاء مشاريع تعكس فكري الخاص.
-      لا أبحث عن الطرق السهلة، بل عن الطرق الذكية.
-    </p>
-  </div>
-</section><footer>
-  <p>© 2026 - عباس بن فرناس | جميع الحقوق محفوظة</p>
-</footer></body>
+
+<body>
+
+<div class="header" id="title">MangaKey Pro</div>
+
+<ul id="list"></ul>
+
+<div id="searchBox" style="display:none; padding:5px;">
+  <input id="searchInput" placeholder="Search...">
+</div>
+
+<div class="footer" id="footer">
+↑↓ | OK | 2⭐ | 5🔍 | 8+
+</div>
+
+<script>
+
+// 🔥 STATE
+let mode="list";
+let index=0;
+let items=[];
+let currentChapters=[];
+let pages=[];
+let pageIndex=0;
+
+// ⭐ FAVORITES
+let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
+
+function saveFav(){
+  localStorage.setItem("fav", JSON.stringify(favorites));
+}
+
+// ⚡ CACHE
+let cache = JSON.parse(localStorage.getItem("cache") || "{}");
+
+function saveCache(){
+  localStorage.setItem("cache", JSON.stringify(cache));
+}
+
+// 🔥 LOAD MANGA
+function loadHome(){
+  if(cache.home){
+    items=cache.home;
+    renderList();
+    return;
+  }
+
+  fetch("https://api.mangadex.org/manga?limit=10")
+  .then(res=>res.json())
+  .then(data=>{
+    items=data.data.map(m=>({
+      id:m.id,
+      title:m.attributes.title.en || "No title"
+    }));
+    cache.home=items;
+    saveCache();
+    renderList();
+  });
+}
+
+loadHome();
+
+// 🔎 SEARCH
+function searchManga(q){
+  if(cache[q]){
+    items=cache[q];
+    renderList();
+    return;
+  }
+
+  fetch("https://api.mangadex.org/manga?title="+q+"&limit=10")
+  .then(res=>res.json())
+  .then(data=>{
+    items=data.data.map(m=>({
+      id:m.id,
+      title:m.attributes.title.en || "No title"
+    }));
+    cache[q]=items;
+    saveCache();
+    renderList();
+  });
+}
+
+// ⭐ ADD FAVORITE
+function addFav(){
+  let m=items[index];
+  if(!favorites.find(f=>f.id===m.id)){
+    favorites.push(m);
+    saveFav();
+    alert("Added ⭐");
+  }
+}
+
+// ⭐ SHOW FAVORITES
+function showFav(){
+  items=favorites;
+  index=0;
+  mode="list";
+  renderList();
+  document.getElementById("title").textContent="Favorites";
+}
+
+// 📚 CHAPTERS
+function loadChapters(id){
+  fetch("https://api.mangadex.org/chapter?manga="+id+"&limit=10&translatedLanguage[]=en")
+  .then(r=>r.json())
+  .then(data=>{
+    currentChapters=data.data;
+    index=0;
+    mode="chapters";
+    renderChapters();
+  });
+}
+
+function renderChapters(){
+  let list=document.getElementById("list");
+  list.innerHTML="";
+  currentChapters.forEach((c,i)=>{
+    let li=document.createElement("li");
+    li.textContent="Ch "+(c.attributes.chapter||"?");
+    if(i===index) li.classList.add("active");
+    list.appendChild(li);
+  });
+  document.getElementById("title").textContent="Chapters";
+}
+
+// 📖 PAGES
+function loadPages(id){
+  fetch("https://api.mangadex.org/at-home/server/"+id)
+  .then(r=>r.json())
+  .then(data=>{
+    let base=data.baseUrl;
+    let hash=data.chapter.hash;
+    pages=data.chapter.data.map(f=>base+"/data/"+hash+"/"+f);
+    pageIndex=0;
+    mode="reader";
+    showPage();
+  });
+}
+
+function showPage(){
+  document.getElementById("list").innerHTML="<img src='"+pages[pageIndex]+"'>";
+  document.getElementById("title").textContent="Page "+(pageIndex+1);
+  document.getElementById("footer").textContent="↑↓ Pages | 0 Back";
+}
+
+// 🎮 KEYS
+document.addEventListener("keydown", e=>{
+
+  if(e.key==="2") showFav();
+  if(e.key==="8") addFav();
+
+  if(e.key==="5"){
+    mode="search";
+    document.getElementById("searchBox").style.display="block";
+    document.getElementById("searchInput").focus();
+    return;
+  }
+
+  if(mode==="search"){
+    if(e.key==="Enter"){
+      let q=document.getElementById("searchInput").value;
+      document.getElementById("searchBox").style.display="none";
+      searchManga(q);
+      mode="list";
+    }
+    return;
+  }
+
+  if(mode==="list"||mode==="chapters"){
+    if(e.key==="ArrowDown"){ index=(index+1)%items.length; refresh(); }
+    if(e.key==="ArrowUp"){ index=(index-1+items.length)%items.length; refresh(); }
+    if(e.key==="Enter"){
+      if(mode==="list") loadChapters(items[index].id);
+      else loadPages(currentChapters[index].id);
+    }
+  }
+
+  if(mode==="reader"){
+    if(e.key==="ArrowDown" && pageIndex<pages.length-1){ pageIndex++; showPage(); }
+    if(e.key==="ArrowUp" && pageIndex>0){ pageIndex--; showPage(); }
+  }
+
+  if(e.key==="0"){
+    if(mode==="reader"){ mode="chapters"; renderChapters(); }
+    else if(mode==="chapters"){ mode="list"; loadHome(); }
+  }
+
+});
+
+function renderList(){
+  let list=document.getElementById("list");
+  list.innerHTML="";
+  items.forEach((m,i)=>{
+    let li=document.createElement("li");
+    li.textContent=m.title;
+    if(i===index) li.classList.add("active");
+    list.appendChild(li);
+  });
+}
+
+function refresh(){
+  let lis=document.querySelectorAll("li");
+  lis.forEach(l=>l.classList.remove("active"));
+  if(lis[index]) lis[index].classList.add("active");
+}
+
+</script>
+
+</body>
 </html>
